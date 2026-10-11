@@ -1,0 +1,8 @@
+{
+  "name": "hakki-huawei-push",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

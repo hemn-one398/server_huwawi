@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Huawei Push</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1c1917;
+      --muted: #57534e;
+      --line: #e7e5e4;
+      --paper: #fafaf9;
+      --card: #ffffff;
+      --ok: #166534;
+      --ok-bg: #f0fdf4;
+      --bad: #991b1b;
+      --bad-bg: #fef2f2;
+      --warn: #92400e;
+      --warn-bg: #fffbeb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
+      font: 15px/1.45 "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(880px, calc(100% - 48px));
+      margin: 40px auto 64px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    h1 { margin: 0; font-size: 28px; font-weight: 650; letter-spacing: -0.03em; }
+    p { margin: 6px 0 0; color: var(--muted); }
+    .status {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+    .status.ready { color: var(--ok); background: var(--ok-bg); }
+    .status.missing { color: var(--bad); background: var(--bad-bg); }
+    form, .results {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px;
+    }
+    label { display: block; margin: 16px 0 6px; font-size: 13px; font-weight: 650; }
+    label:first-child { margin-top: 0; }
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      color: inherit;
+      background: #fff;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0 0;
+      font-weight: 500;
+    }
+    .check input { width: auto; }
+    .kinds { display: flex; gap: 8px; margin-bottom: 8px; }
+    .kind {
+      background: #f5f5f4;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .kind.active { background: var(--ink); color: white; border-color: var(--ink); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+    .hint { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+    .actions { display: flex; gap: 10px; margin-top: 18px; }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+      background: var(--ink);
+      color: white;
+    }
+    button.secondary { background: #44403c; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .results { margin-top: 18px; }
+    .results h2 { margin: 0 0 12px; font-size: 16px; }
+    .empty { color: var(--muted); margin: 0; }
+    article {
+      border-top: 1px solid var(--line);
+      padding: 12px 0;
+    }
+    article:first-of-type { border-top: 0; padding-top: 0; }
+    .row { display: flex; justify-content: space-between; gap: 16px; }
+    .tag { font-weight: 700; }
+    .tag.sent, .tag.valid { color: var(--ok); }
+    .tag.failed { color: var(--bad); }
+    .meta { color: var(--muted); font-size: 13px; }
+    .err { margin: 6px 0 0; color: var(--bad); }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Hakki Plus</h1>
+        <p id="app-id">Huawei Push</p>
+      </div>
+      <div id="status" class="status missing">Missing server/.env</div>
+    </header>
+    <form id="form">
+      <div class="kinds">
+        <button type="button" id="kind-message" class="kind">Message</button>
+        <button type="button" id="kind-call" class="kind active">Call</button>
+      </div>
+      <p class="hint" id="kind-hint">Shows the incoming call screen, the same way a Firebase call push does.</p>
+      <label for="token">Device token</label>
+      <textarea id="token" name="token" spellcheck="false" placeholder="Paste the HMS token from the device log"></textarea>
+      <div id="message-fields" hidden>
+        <label for="title">Title</label>
+        <input id="title" name="title" autocomplete="off" value="Hakki Plus">
+        <label for="body">Message</label>
+        <textarea id="body" name="body">Dashboard message</textarea>
+        <div class="grid">
+          <div>
+            <label for="room-id">Room id</label>
+            <input id="room-id" autocomplete="off" value="36">
+          </div>
+          <div>
+            <label for="room-name">Room name</label>
+            <input id="room-name" autocomplete="off" value="Test">
+          </div>
+        </div>
+        <label class="check">
+          <input id="message-group" type="checkbox">
+          Group chat
+        </label>
+      </div>
+      <div id="call-fields">
+        <div class="grid">
+          <div>
+            <label for="caller-name">Caller name</label>
+            <input id="caller-name" autocomplete="off" value="Test Caller">
+          </div>
+          <div>
+            <label for="phone">Phone</label>
+            <input id="phone" autocomplete="off" value="+963500000001">
+          </div>
+          <div>
+            <label for="chat-id">Chat id</label>
+            <input id="chat-id" autocomplete="off" value="36">
+          </div>
+          <div>
+            <label for="caller-id">Caller id</label>
+            <input id="caller-id" autocomplete="off" value="2">
+          </div>
+          <div>
+            <label for="user-id">Your user id</label>
+            <input id="user-id" autocomplete="off" inputmode="numeric" value="601141">
+          </div>
+          <div>
+            <label for="join-token">Join token</label>
+            <input id="join-token" autocomplete="off">
+          </div>
+        </div>
+        <label class="check">
+          <input id="video" type="checkbox">
+          Video call
+        </label>
+        <label class="check">
+          <input id="call-group" type="checkbox">
+          Group call
+        </label>
+      </div>
+      <label class="check">
+        <input id="validate" type="checkbox">
+        Check with Huawei without delivering
+      </label>
+      <div class="actions">
+        <button type="button" id="send" disabled>Send call</button>
+      </div>
+    </form>
+    <section class="results">
+      <h2>Results</h2>
+      <p class="empty" id="empty">No sends yet.</p>
+      <div id="log"></div>
+    </section>
+  </main>
+  <script>
+    const statusEl = document.querySelector('#status');
+    const appIdEl = document.querySelector('#app-id');
+    const tokenEl = document.querySelector('#token');
+    const validateEl = document.querySelector('#validate');
+    const logEl = document.querySelector('#log');
+    const emptyEl = document.querySelector('#empty');
+    const sendButton = document.querySelector('#send');
+    const messageFields = document.querySelector('#message-fields');
+    const callFields = document.querySelector('#call-fields');
+    const kindHint = document.querySelector('#kind-hint');
+    let kind = 'call';
+    let ready = false;
+
+    document.querySelector('#kind-message').addEventListener('click', () => setKind('message'));
+    document.querySelector('#kind-call').addEventListener('click', () => setKind('call'));
+    sendButton.addEventListener('click', send);
+
+    loadConfig();
+
+    async function loadConfig() {
+      try {
+        const config = await fetch('/api/config').then((res) => res.json());
+        const parts = ['Huawei Push'];
+        if (config.packageName) parts.push(config.packageName);
+        if (config.appId) parts.push(`App ID ${config.appId}`);
+        if (config.appKeySet) parts.push('app key loaded');
+        appIdEl.textContent = parts.join(' · ');
+        if (config.defaultDeviceToken) tokenEl.value = config.defaultDeviceToken;
+        ready = config.configured === true;
+        statusEl.textContent = ready ? 'Ready' : 'Missing server/.env';
+        statusEl.className = `status ${ready ? 'ready' : 'missing'}`;
+        sendButton.disabled = !ready;
+      } catch {
+        statusEl.textContent = 'Missing server/.env';
+      }
+    }
+
+    function setKind(next) {
+      kind = next;
+      const message = next === 'message';
+      document.querySelector('#kind-message').classList.toggle('active', message);
+      document.querySelector('#kind-call').classList.toggle('active', !message);
+      messageFields.hidden = !message;
+      callFields.hidden = message;
+      sendButton.textContent = message ? 'Send message' : 'Send call';
+      kindHint.textContent = message
+        ? 'Open app shows an in-app banner. Closed app shows a notification you can tap to open the chat.'
+        : 'Shows the incoming call screen, the same way a Firebase call push does.';
+    }
+
+    function value(id) {
+      return document.querySelector(id).value.trim();
+    }
+
+    async function send() {
+      sendButton.disabled = true;
+      const payload = kind === 'call'
+        ? {
+            kind,
+            token: tokenEl.value.trim(),
+            name: value('#caller-name'),
+            phone: value('#phone'),
+            chatId: value('#chat-id'),
+            callerId: value('#caller-id'),
+            userId: value('#user-id'),
+            joinToken: value('#join-token'),
+            isVideo: document.querySelector('#video').checked,
+            isGroup: document.querySelector('#call-group').checked,
+            validateOnly: validateEl.checked,
+          }
+        : {
+            kind,
+            token: tokenEl.value.trim(),
+            title: value('#title'),
+            body: value('#body'),
+            roomId: value('#room-id'),
+            roomName: value('#room-name'),
+            isGroup: document.querySelector('#message-group').checked,
+            validateOnly: validateEl.checked,
+          };
+      try {
+        const response = await fetch('/api/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        prepend(await response.json());
+      } catch {
+        prepend({ ok: false, error: 'Could not reach the local server' });
+      } finally {
+        sendButton.disabled = !ready;
+      }
+    }
+
+    function prepend(result) {
+      emptyEl.hidden = true;
+      const state = !result.ok ? 'failed' : result.validateOnly ? 'valid' : 'sent';
+      const article = document.createElement('article');
+      const when = new Date().toLocaleTimeString();
+      const code = result.code ? result.code : '—';
+      const requestId = result.requestId ? result.requestId : '—';
+      article.innerHTML = `
+        <div class="row">
+          <span class="tag ${state}">${state}</span>
+          <span class="meta">${when}</span>
+        </div>
+        <div class="meta">${escapeHtml(result.kind || '')} · ${escapeHtml(code)} · ${escapeHtml(requestId)}</div>
+      `;
+      if (result.error) {
+        const err = document.createElement('p');
+        err.className = 'err';
+        err.textContent = result.error;
+        article.append(err);
+      }
+      logEl.prepend(article);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+    }
+  </script>
+</body>
+</html>
